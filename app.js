@@ -64,7 +64,7 @@ io.on('connection', (socket) => {
     console.log('a user connected');
 });
 
-const port = process.env.port;
+const port = process.env.PORT || 3000;
 
 /* depopulateSurvey(); */
 
