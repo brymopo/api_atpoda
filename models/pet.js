@@ -11,6 +11,7 @@ const petSchema = new Schema({
     vaccinated:{type:Boolean,required:true},
     bio:{type:String,required:true},
     city:{type:String,required:true},
+    country:{type:String,required:true},
     province:{type:String,required:true},
     pictures:[{type:mongoose.Schema.Types.ObjectId,ref:'Picture'}],
     videos:[{type:mongoose.Schema.Types.ObjectId,ref:'Videos'}],
