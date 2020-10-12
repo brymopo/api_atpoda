@@ -66,7 +66,7 @@ exports.createAdd = (req,res,next)=>{
         newAd.save()                  
         .then(newAd=>{
             user.ads.push(newAd._id);
-            user.save()
+            user.save();
             Ad.populate(newAd, {path:'pet'})
             .then(popAd=>{
                 return res.status(200).json({
