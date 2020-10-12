@@ -4,8 +4,7 @@ module.exports = (router)=>{
     const Ad    =   require('../controllers/ad');
     const Pet   =   require('../controllers/pet');
 
-    router.post('/ads/create',passport.authenticate('jwt',{session:false}),
-    Pet.createPet,Ad.createAdd);
+    router.post('/ads/create',passport.authenticate('jwt',{session:false}), Ad.createAdd);
 
     router.get('/ads/show_all',Ad.showAds);
 

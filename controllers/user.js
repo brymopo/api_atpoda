@@ -106,7 +106,13 @@ exports.showUser = (req,res,next)=>{
     
     User.findById(req.user._id)
     .populate('pets')
-    .populate('ads')
+    .populate({
+        path:'ads',
+        populate:{
+            path: 'pet',
+            model:'Pet'
+        }
+    })
     .populate('survey')
     .exec()
     .then(user=>{

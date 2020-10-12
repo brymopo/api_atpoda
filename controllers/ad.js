@@ -58,31 +58,35 @@ user's id becomes available
 
 */
 
-exports.createAdd = (req,res)=>{
+exports.createAdd = (req,res,next)=>{
+    
     User.findById(req.user._id)
     .then(user=>{
-        
-        ad.create({
-            pet:req.pet._id,
-        }).then(newAd=>{
+        const newAd = new Ad({pet:req.body});        
+        newAd.save()                  
+        .then(newAd=>{
             user.ads.push(newAd._id);
             user.save()
-            return res.status(200)
-            .json({
-                success:'new add created',
-                result:newAd
+            Ad.populate(newAd, {path:'pet'})
+            .then(popAd=>{
+                return res.status(200).json({
+                    success:true,
+                    result:popAd
+                })
             })
+            .catch(e=>next(e))
+            
         })
     })
     .catch((err)=>next(err));  
 };
 
-exports.deleteOne = (req,res)=>{
+exports.deleteOne = (req,res,next)=>{
     let id = req.params.id;
     Ad.findById(id)
     .populate('pet')
     .exec()
-    .then(foundAd=>{
+    .then(foundAd=>{       
 
         if(String(req.user._id)!==String(foundAd.pet.owner)){     
 
@@ -91,13 +95,19 @@ exports.deleteOne = (req,res)=>{
                 result:"You are not authorized to delete this add"
             })
         }
+
         Ad.deleteOne(foundAd)
-            .then(deletedAdd=>{
-                return res.status(404).json({
+        .then((deletedAd)=>{
+            
+            if(deletedAd){
+                return res.status(200).json({
                     success: true,
-                    result:"Add deleted!"
+                    result:foundAd._id
                 })
-            })
+            }
+                       
+        })
+        
     })
     .catch((err)=>next(err));  
 }
