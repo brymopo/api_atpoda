@@ -4,7 +4,7 @@ const Ad =  require('../models/ad');
 const User = require('mongoose').model('User');
 const Pet = require('../models/pet');
 
-exports.showOne = (req,res)=>{
+exports.showOne = (req,res,next)=>{
     let id = req.params.id;
     Ad.findById(id)
     .populate('pet')

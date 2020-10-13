@@ -114,6 +114,7 @@ exports.showUser = (req,res,next)=>{
         }
     })
     .populate('survey')
+    .populate('reportedAds')
     .exec()
     .then(user=>{
         if(user){
