@@ -5,7 +5,7 @@ const messageSchema = new Schema({
     author:{type:mongoose.Schema.Types.ObjectId,ref:'User'},
     recepient:{type:mongoose.Schema.Types.ObjectId,ref:'User'},
     content:{type:String,required:true},
-    conversation:{type:mongoose.Schema.Types.ObjectId,ref:'Conversation'}
+    timestamp:Date
 })
 
 module.exports = mongoose.model('Message',messageSchema);
