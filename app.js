@@ -6,6 +6,7 @@ const io =  require('socket.io')(http);
 const passport = require('passport');
 const user = require('./routes/user');
 
+
 let test = 'test'
 
 require('dotenv').config();
@@ -59,10 +60,9 @@ app.use(cors(corsOptions));
 require('./routes/index')(app)
 app.use(errorHandler);
 
+require('./chat')(io);
 
-io.on('connection', (socket) => {
-    console.log('a user connected');
-});
+// io.on('connection', io.chat(socket));
 
 const port = process.env.PORT || 3000;
 
