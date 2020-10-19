@@ -1,59 +1,25 @@
-const conversation = require("./models/conversation");
+const Conversation = require("./controllers/conversation");
+const Chat = require('./controllers/chat');
 
-module.exports = (io)=>{
-    const Message = require("./controllers/message")
-
-
-    function getAllRoomMembers(room, _nsp) {
-        var roomMembers = [];
-        var nsp = (typeof _nsp !== 'string') ? '/' : _nsp;
-
-        for( var member in io.nsps[nsp].adapter.rooms[room] ) {
-            roomMembers.push(member);
-        }
-
-        return roomMembers;
-    }
+module.exports = (io)=>{    
 
     io.on('connection',(socket)=>{
         console.log('User Connected');
         console.log(socket.id);
 
-        let conversations = JSON.parse(socket.handshake.query.conversations);
-        
-        if(conversations.length){
-            conversations.forEach(id=>{
-                socket.join(id);
-                console.log('joined room: ',id)
-            });  
-        }             
+        let userId = socket.handshake.query.userId;
+        console.log('id: ',userId)
 
-        socket.on('message',async (form)=>{
-            try {
-                let data = JSON.parse(form);
-            
-                let newMsg = await Message.createMessage(data.message);
+        Chat.joinRooms(userId,socket,io);            
 
-                let newConversation;
+        socket.on('message',(form)=>{
+            Chat.handleChatConversation(form,socket,io);
+        });
 
-                if(!data.room){
-                    newConversation = await Message.createConversation(newMsg);
-                    Message.pushConvToUsers(newConversation);
-                }else{
-                    newConversation = await Message.pushMsgToConv(data.room,newMsg);
-                }
-                
-                let room = newConversation._id;
-
-                socket.join(room);
-                io.sockets.emit("message",newConversation)
-                               
-            } catch (error) {
-                console.log("An error occured")
-                console.log("Error: ",error)
-            }                      
-            
-                 
+        socket.on('conv:get',async (id)=>{
+            let conversation = await Conversation.showConversation(id);
+            socket.join(conversation._id);
+            io.to(userId).emit('message',conversation);
         })
 
         socket.on('disconnect',()=>{

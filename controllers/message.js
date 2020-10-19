@@ -51,7 +51,10 @@ exports.createConversation = (msg)=>{
 
 exports.pushMsgToConv = (id,msg)=>{
     return new Promise((resolve,reject)=>{
-        Conversation.findById(id).then(conv=>{
+        Conversation.findById(id)
+        .populate('messages')
+        .exec()
+        .then(conv=>{
             if(conv){
                 conv.messages.push(msg);
                 conv.save()
