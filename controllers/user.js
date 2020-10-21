@@ -4,6 +4,13 @@ const passport = require('passport');
 const issueJWT  =   require('../auth/utils').issueJWT;
 const validPassword = require('../auth/utils').validPassword;
 const genPassword = require('../auth/utils').genPassword;
+const Nexmo = require('nexmo');
+const nunjucks = require('nunjucks');
+
+const nexmo = new Nexmo({
+    apiKey:process.env.API_KEY,
+    apiSecret:process.env.API_SECRET
+})
 
 function createNewUser(form){
     let hashAndSalt = genPassword(form.password);
@@ -69,19 +76,68 @@ exports.loginUser = (req,res,next)=>{
         if(!user){            
             return res.status(401).json({success:false,result:'Este nombre de usuario no existe'})
         }
+        console.log(nexmo)
         const isValid = validPassword(req.body.password,user.hash,user.salt);
         if(isValid){
-            const jwt = issueJWT(user);
-            return res.status(200).json({
-                success:true,
-                result:{token: jwt.token, expiresIn:jwt.expires}            
-            });
+            console.log('password was valid!!')
+            req.user = user;
+            console.log('User: ',req.user)
+            next();
+        }else{
+            return res.status(401).json({success:false, result:'Por favor verifica tu clave e intenta de nuevo'});
         }
 
-        return res.status(401).json({success:false, result:'Por favor verifica tu clave e intenta de nuevo'})
     })
     .catch((err)=>next(err));  
 };
+
+exports.create2faCode = (req,res,next)=>{
+    console.log('Inside create2fa');
+    let number = `57${req.user.phone}`;
+    console.log('Phone number: ',number);
+    nexmo.verify.request({
+        number:number,
+        brand:'ATPODA',
+        code_length:'6'
+    },(err,result)=>{
+        if(result.status != 0){
+            console.log(result.error_text);
+            return res.status(500)
+        }else{
+            console.log('request id: ',result.request_id)
+            return res.status(200).json({
+                success:true,
+                result:{
+                    requestId:result.request_id,
+                    userId:req.user._id 
+                }
+            })
+        }
+    })
+};
+
+exports.check2faCode = (req,res,next)=>{
+    console.log('Inside creck2faCode');
+    console.log(req.body.requestId);
+    console.log(req.body.code);
+    console.log(req.body.userId);
+    nexmo.verify.check({
+        request_id:req.body.requestId,
+        code:req.body.code
+    }, (err,result)=>{
+        if(result.status != 0){
+            console.log(result.error_text);
+            return res.status(500)
+        }else{
+            const jwt = issueJWT({_id:req.body.userId});
+
+            return res.status(200).json({
+                    success:true,
+                    result:{token: jwt.token, expiresIn:jwt.expires}  
+            })
+        }
+    })
+}
 
 // START OF PROTECTED ROUTES' FUNCTIONS //
 
