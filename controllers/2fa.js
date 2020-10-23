@@ -1,43 +1,64 @@
-const Nexmo = require('nexmo');
+const accountSid = process.env.ACCOUNT_SID;
+const authToken = process.env.AUTH_TOKEN;
+const Client = require('twilio')(accountSid,authToken);
+const Token = require('./token');
 
-const nexmo = new Nexmo({
-    apiKey:process.env.API_KEY,
-    apiSecret:process.env.API_SECRET
-});
 
-exports.createCode = (user)=>{
-    
-    let targetNumber = `57${user.phone}`;
-    
-    return new Promise((resolve,reject)=>{
-        nexmo.verify.request({
-            number:targetNumber,
-            brand:'ATPODA',
-            code_length:'6'
-        },(err,result)=>{
-            if(result.status != 0){
-                reject(new Error(result.error_text));
-            }else{
-                resolve({
-                    requestId:result.request_id,
-                    userId:user._id 
-                });                
-            }
-        })
-    })    
+const twilioNumber = process.env.TWILIO_NUMBER;
+
+exports.createCode = async (user)=>{
+    try {
+        let token = await Token.create(user._id,true);
+        let targetNumber = `+57${user.phone}`;
+
+        const sms2FA = {
+            body:`Tu codigo ATPODA es: ${token.code}. Valido por 5 minutos`,
+            from:twilioNumber,
+            to:targetNumber
+        };  
+        return new Promise( (resolve,reject)=>{
+                 
+            Client.messages.create(sms2FA).then(message=>{
+                if(!message){
+                        Token.destroy(token);
+                        reject(new Error('Could not send message, please try again'));
+                }else{
+                    resolve({
+                        requestId:token.token,
+                            userId:user._id 
+                    });
+                }
+            })
+            .catch(e=>{reject(e)})
+                      
+        })     
+        
+    } catch (error) {
+        throw error;
+    } 
+        
 };
 
 exports.verifyCode = (body)=>{
+    
     return new Promise((resolve,reject)=>{
-        nexmo.verify.check({
-            request_id:body.requestId,
-            code:body.code
-        }, (err,result)=>{
-            if(result.status != 0){
-                reject(result.error_text);
-            }else{
+        Token.retrieve(body.requestId).then(token=>{
+            if(token.code == body.code){
+                Token.destroy(token);
                 resolve(true);
+            }else{
+                let attempts = token.failedAttempts + 1;
+                if(attempts>=3){
+                    Token.destroy(token);
+                    reject(new Error('Aborted, too many failed attempts'));
+                }else{
+                    Token.increseFailedAttempts(token,attempts);
+                    reject(new Error('Code validation failed'));
+                }
+                
             }
         })
+        .catch(err=>{reject(err)})         
     })    
 }
+
