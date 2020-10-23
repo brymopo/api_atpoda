@@ -10,6 +10,23 @@ const issueJWT  =   require('../auth/utils').issueJWT;
 const validPassword = require('../auth/utils').validPassword;
 const genPassword = require('../auth/utils').genPassword;
 
+function filterOutHashAndSalt(user){
+    /* 
+    Loops through the keys of property _doc of the User document and returns a copy
+    object without the password's hash and salt
+    */
+
+    const filtered = {};
+
+    for (const key in user._doc) {
+        if(!(key==='hash'||key==='salt')){
+            filtered[key] = user[key]
+        }
+    }
+    
+    return filtered;
+}
+
 function createNewUser(form){
     let hashAndSalt = genPassword(form.password);
     
@@ -34,24 +51,6 @@ function createNewUser(form){
         .catch(e=>{reject(e)})
     });    
 };
-
-
-function filterOutHashAndSalt(user){
-    /* 
-    Loops through the keys of property _doc of the User document and returns a copy
-    object without the password's hash and salt
-    */
-
-    const filtered = {};
-
-    for (const key in user._doc) {
-        if(!(key==='hash'||key==='salt')){
-            filtered[key] = user[key]
-        }
-    }
-    
-    return filtered;
-}
 
 function findUser(query){
     

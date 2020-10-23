@@ -47,7 +47,7 @@ exports.createSurvey = (req,res,next)=>{
         questions.forEach(question => {
             /* 
             Instead of simply taking the questions and answers from the request body,
-            questions are set from the master survey and then its answers are looked up +
+            questions are set from the master survey and then its answers are looked up
             within the request, if they exist. This is done to prevent users from tampering
             with the questions in the frontend.
             */

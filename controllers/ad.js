@@ -24,7 +24,7 @@ exports.showOne = (req,res,next)=>{
         }
     })
     .catch((err)=>next(err));  
-};
+}; 
 
 exports.showAds = (req,res)=>{
     Ad.find()
