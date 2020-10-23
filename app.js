@@ -73,7 +73,7 @@ app.use('*',(req,res)=>{
         message:'The requested page does not exist',
         method:req.method       
     })
-})
+});
 http.listen(port,()=>{
     console.log('Server running successfully');
 })

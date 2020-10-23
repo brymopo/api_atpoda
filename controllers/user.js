@@ -1,20 +1,18 @@
-const mongoose = require('mongoose');
+// CONTROLLERS
 const User = require('mongoose').model('User');
-const passport = require('passport');
+const Token = require('./token');
+const Email = require('./email');
+const Template = require('../email_templates/templates');
+const TwoFA = require('./2fa');
+
+//UTIL FUNCTIONS
 const issueJWT  =   require('../auth/utils').issueJWT;
 const validPassword = require('../auth/utils').validPassword;
 const genPassword = require('../auth/utils').genPassword;
-const Nexmo = require('nexmo');
-const nunjucks = require('nunjucks');
-
-const nexmo = new Nexmo({
-    apiKey:process.env.API_KEY,
-    apiSecret:process.env.API_SECRET
-})
 
 function createNewUser(form){
     let hashAndSalt = genPassword(form.password);
-
+    
     let newUser ={
         username:form.username,
         firstName:form.firstName,
@@ -25,8 +23,18 @@ function createNewUser(form){
         salt:hashAndSalt.salt
     };
 
-    return newUser
+    return new Promise((resolve,reject)=>{
+        User.create(newUser).then(user=>{
+            if(!user){
+                reject(new Error('Could not create user, please try again'));
+            }else{
+                resolve(user);
+            }
+        })
+        .catch(e=>{reject(e)})
+    });    
 };
+
 
 function filterOutHashAndSalt(user){
     /* 
@@ -45,90 +53,146 @@ function filterOutHashAndSalt(user){
     return filtered;
 }
 
-exports.signUpUser = (req,res,next)=>{
-    let form = req.body;
-    console.log(form);
+function findUser(query){
     
-    let newUser = createNewUser(form);
-
-    User.create(newUser)
-    .then(user=>{
-        if(!user){
-            return res.status(500).json({
-                success:false,
-                result:'User not created, please try again'
-            })
-        }
-
-        let jwt = issueJWT(user);
-
-        return res.status(200).json({
-            success:true,
-            result:{token: jwt.token, expiresIn:jwt.expires}            
+    return new Promise((resolve,reject)=>{
+        User.findOne(query).then(foundUser=>{
+            if(!foundUser){
+                reject(new Error('Could not locate user. Retry')); 
+            }
+        
+            resolve(foundUser);
         })
+        .catch(e=>{reject(e)});
     })
-    .catch((err)=>next(err));   
+}
+
+exports.signUpUser = async (req,res,next)=>{
+    try {
+        let newUser = await createNewUser(req.body);
+        let emailToken = await Token.create(newUser._id);
+
+        let content = {
+            text:'Hello',
+            html:Template.firstValidation(newUser,emailToken)
+        };
+
+        let isSuccessSent = await Email.sendToken(newUser.email,'Activa tu cuenta',content);
+        
+        return res.status(200).json({
+                success:isSuccessSent,
+                result:'email sent'
+        });        
+    } catch (error) {
+        next(error)
+    }        
 };
 
-exports.loginUser = (req,res,next)=>{    
-    User.findOne({username:req.body.username})
-    .then(user=>{        
-        if(!user){            
-            return res.status(401).json({success:false,result:'Este nombre de usuario no existe'})
+exports.sendResetToken = async (req,res,next)=>{
+    try {
+        let user = await findUser({email:req.body.email});
+        let emailToken = await Token.create(user._id);       
+
+        let content = {
+            text:'Hello',
+            html:Template.resetPassword(user,emailToken)
+        };
+
+        let isSuccessSent = await Email.sendToken(user.email,'Reestablecer Clave',content);
+        
+        return res.status(200).json({
+                success:isSuccessSent,
+                result:'email sent'
+        });
+
+      
+    } catch (error) {
+        next(error);
+    }         
+};
+
+exports.resetPasswordWithToken = async (req,res,next)=>{
+    try {
+        
+        let token = await Token.retrieve(req.params.token);
+        let user = await findUser({_id:token._userId});
+        let hashAndSalt = genPassword(req.body.newPassword);
+        
+        user.hash = hashAndSalt.hash;
+        user.salt = hashAndSalt.salt;
+        let isSuccess = await user.save();
+        
+        if(isSuccess){  
+
+            Token.destroy(token).then(()=>{               
+
+                return res.status(200).json({
+                    success:true,
+                    result:'password reset'
+                })
+            })
+            .catch(e=>{next(e)});
+            
+        };        
+    } catch (error) {
+        next(error)
+    }
+}
+
+exports.validateEmail = async (req,res,next)=>{
+    try {
+        let token = await Token.retrieve(req.params.token);
+        let user = await findUser({_id:token._userId});
+        user.isVerified = true;
+        
+        let isSuccess = await user.save();
+        
+        if(isSuccess){            
+            let jwt = issueJWT(user);
+            Token.destroy(token);    
+            return res.status(200).json({
+                success:true,
+                result:{token: jwt.token, expiresIn:jwt.expires}            
+            }) ;               
         }
-        console.log(nexmo)
-        const isValid = validPassword(req.body.password,user.hash,user.salt);
+    } catch (error) {
+        next(error)
+    }
+    
+}
+
+exports.loginUser = async (req,res,next)=>{
+    try {
+        let foundUser = await findUser({username:req.body.username});
+    
+        if(!foundUser.isVerified){
+            return res.status(401).json({success:false,result:'El usuario aun no ha verificado su direccion de correo electronico'})
+        };
+            
+        const isValid = validPassword(req.body.password,foundUser.hash,foundUser.salt);
+        
         if(isValid){
-            console.log('password was valid!!')
-            req.user = user;
-            console.log('User: ',req.user)
-            next();
+            let code2fa = await TwoFA.createCode(foundUser);
+            return res.status(200).json({
+                success:true,
+                result:code2fa
+            })        
         }else{
             return res.status(401).json({success:false, result:'Por favor verifica tu clave e intenta de nuevo'});
         }
 
-    })
-    .catch((err)=>next(err));  
+    } catch (error) {
+        next(error);
+    }  
+    
 };
 
-exports.create2faCode = (req,res,next)=>{
-    console.log('Inside create2fa');
-    let number = `57${req.user.phone}`;
-    console.log('Phone number: ',number);
-    nexmo.verify.request({
-        number:number,
-        brand:'ATPODA',
-        code_length:'6'
-    },(err,result)=>{
-        if(result.status != 0){
-            console.log(result.error_text);
-            return res.status(500)
-        }else{
-            console.log('request id: ',result.request_id)
-            return res.status(200).json({
-                success:true,
-                result:{
-                    requestId:result.request_id,
-                    userId:req.user._id 
-                }
-            })
-        }
-    })
-};
+exports.check2faCode = async (req,res,next)=>{
+    try {
 
-exports.check2faCode = (req,res,next)=>{
-    console.log('Inside creck2faCode');
-    console.log(req.body.requestId);
-    console.log(req.body.code);
-    console.log(req.body.userId);
-    nexmo.verify.check({
-        request_id:req.body.requestId,
-        code:req.body.code
-    }, (err,result)=>{
-        if(result.status != 0){
-            console.log(result.error_text);
-            return res.status(500)
-        }else{
+        let isValidCode = await TwoFA.verifyCode(req.body);
+    
+        if(isValidCode){
             const jwt = issueJWT({_id:req.body.userId});
 
             return res.status(200).json({
@@ -136,7 +200,13 @@ exports.check2faCode = (req,res,next)=>{
                     result:{token: jwt.token, expiresIn:jwt.expires}  
             })
         }
-    })
+        
+    } catch (error) {
+
+        next(error);
+        
+    }  
+    
 }
 
 // START OF PROTECTED ROUTES' FUNCTIONS //

@@ -3,11 +3,18 @@ module.exports = (router)=>{
     const User = require('../controllers/user');
     
     /* ROUTES */
+
+    router.get('/confirmation/:token',User.validateEmail);
+
     router.post('/users/new',User.signUpUser);
     
-    router.post('/users/login',User.loginUser,User.create2faCode);
+    router.post('/users/login',User.loginUser);
 
-    router.post('/users/login/2fa',User.check2faCode)
+    router.post('/users/login/2fa',User.check2faCode);    
+
+    router.post('/users/sendResetToken',User.sendResetToken);
+
+    router.post('/users/reset_password/:token',User.resetPasswordWithToken);    
     
     /* START OF PROTECTED ROUTES */
     

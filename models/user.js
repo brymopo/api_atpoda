@@ -14,7 +14,10 @@ const userSchema = new Schema({
     ads:[{type:mongoose.Schema.Types.ObjectId,ref:'Ad'}],
     pets:[{type:mongoose.Schema.Types.ObjectId,ref:'Pet'}],    
     conversations:[{type:mongoose.Schema.Types.ObjectId,ref:'Conversation'}],    
-    survey:[{type:mongoose.Schema.Types.ObjectId,ref:'Survey'}] 
+    survey:[{type:mongoose.Schema.Types.ObjectId,ref:'Survey'}],
+    isVerified:{type:Boolean,default:false},
+    passwordResetToken:String,
+    passwordResetExpires:Date 
 },options)
 
 mongoose.model('User',userSchema);
