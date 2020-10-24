@@ -14,13 +14,21 @@ module.exports = (router)=>{
 
     router.post('/users/sendResetToken',User.sendResetToken);
 
-    router.post('/users/reset_password/:token',User.resetPasswordWithToken);    
+    router.post('/users/reset_password/:token',User.resetPasswordWithToken);
+
+    router.post('/users/login/resend2fa',User.resend2faCode);
+    
     
     /* START OF PROTECTED ROUTES */
     
     router.get('/users/show',passport.authenticate('jwt',{session:false}),User.showUser);
     
     router.put('/users/update',passport.authenticate('jwt',{session:false}),User.updateUser);
+
+    router.get('/users/password/change',passport.authenticate('jwt',{session:false}),User.requestPasswordChange);
+
+    router.post('/users/password/change',passport.authenticate('jwt',{session:false}),User.changePassword,User.updateUser);
+
     
     /* END OF PROTECTED ROUTES */
 };

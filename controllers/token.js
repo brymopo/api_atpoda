@@ -67,3 +67,16 @@ exports.destroy = (token)=>{
         .catch(e=>{reject(e)});
     })
 }
+
+exports.retrieveByUserId = (userId)=>{
+    return new Promise((resolve,reject)=>{
+        Token.findOne({userId:userId}).then(token=>{
+            if(!token){
+                resolve(false);
+            }else{
+                resolve(token);
+            }
+        })
+        .catch(e=>{reject(e)});
+    })
+}

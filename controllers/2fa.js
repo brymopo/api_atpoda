@@ -6,9 +6,7 @@ const Token = require('./token');
 
 const twilioNumber = process.env.TWILIO_NUMBER;
 
-exports.createCode = async (user)=>{
-    try {
-        let token = await Token.create(user._id,true);
+exports.sendSMSCode = (token,user)=>{
         let targetNumber = `+57${user.phone}`;
 
         const sms2FA = {
@@ -25,22 +23,31 @@ exports.createCode = async (user)=>{
                 }else{
                     resolve({
                         requestId:token.token,
-                            userId:user._id 
+                        userId:user._id 
                     });
                 }
             })
             .catch(e=>{reject(e)})
                       
-        })     
-        
-    } catch (error) {
-        throw error;
-    } 
+        })
+}
+
+exports.createCode = (user)=>{   
+                
+    return new Promise(async (resolve,reject)=>{
+        try {
+            let tokenExists = await Token.retrieveByUserId(user._id);
+            let token = tokenExists? tokenExists: await Token.create(user._id,true);
+            resolve(token);
+        } catch (error) {
+            reject(error);
+        }
+    })    
         
 };
 
 exports.verifyCode = (body)=>{
-    
+    console.log('received body: ',body);
     return new Promise((resolve,reject)=>{
         Token.retrieve(body.requestId).then(token=>{
             if(token.code == body.code){
@@ -61,4 +68,3 @@ exports.verifyCode = (body)=>{
         .catch(err=>{reject(err)})         
     })    
 }
-

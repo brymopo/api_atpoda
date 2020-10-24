@@ -172,9 +172,10 @@ exports.loginUser = async (req,res,next)=>{
         
         if(isValid){
             let code2fa = await TwoFA.createCode(foundUser);
+            let sentCode = await TwoFA.sendSMSCode(code2fa,foundUser);
             return res.status(200).json({
                 success:true,
-                result:code2fa
+                result:sentCode
             })        
         }else{
             return res.status(401).json({success:false, result:'Por favor verifica tu clave e intenta de nuevo'});
@@ -185,6 +186,22 @@ exports.loginUser = async (req,res,next)=>{
     }  
     
 };
+
+exports.resend2faCode = async (req,res,next)=>{
+    try {
+       let token = await Token.retrieve(req.body.requestId);
+       let user = await findUser({_id:token._userId});
+       let sentCode = await TwoFA.sendSMSCode(token,user);
+       if(sentCode){
+           return res.status(200).json({
+               success:true,
+               result:'Code was resent'
+           })
+       }
+    } catch (error) {
+        next(error);
+    }
+}
 
 exports.check2faCode = async (req,res,next)=>{
     try {
@@ -220,41 +237,31 @@ user's id becomes available
 
 */
 
-exports.showUser = (req,res,next)=>{    
-    
-    if(!req.user){
-        return res.status(204).json({
-            success:false,
-            result:'User could not be found'
-        })
-    }
-    
-    User.findById(req.user._id)
-    .populate('pets')
-    .populate({
-        path:'ads',
-        populate:{
-            path: 'pet',
-            model:'Pet'
-        }
-    })
-    .populate('survey')
-    .populate('reportedAds')
-    .exec()
-    .then(user=>{
-        if(user){
-
-            const filteredUser = filterOutHashAndSalt(user);
-
-            return res.status(200).json({
-                success:true,
-                result:filteredUser
+exports.showUser = async (req,res,next)=>{    
+    try {
+        let user = req.user;
+        if(!user){
+            return res.status(204).json({
+                success:false,
+                result:'User could not be found'
             })
         }
-        let error = new Error('User could not be found');
-        next(error);
-    })
-    .catch(e=>next(e));
+        await user.populate('pets')        
+        .populate('survey')
+        .populate('reportedAds')
+        .populate({path:'ads',populate:{path: 'pet',model:'Pet'}})
+        .execPopulate();
+        
+        const filteredUser = filterOutHashAndSalt(user);
+
+        return res.status(200).json({
+                    success:true,
+                    result:filteredUser
+        })
+    } catch (error) {
+        next(error)
+    };
+    
 };
 
 exports.updateUser = (req,res)=>{
@@ -276,5 +283,40 @@ exports.updateUser = (req,res)=>{
         .catch((err)=>next(err));  
     }
 };
+
+exports.requestPasswordChange = async (req,res,next)=>{
+    try {
+        let code2fa = await TwoFA.createCode(req.user);
+        return res.status(200).json({
+                success:true,
+                result:code2fa
+        }) 
+    } catch (error) {
+        next(error)
+    }
+    
+};
+
+exports.changePassword = async (req,res,next)=>{
+    try {
+        let user = req.user;        
+        const isValidCode = await TwoFA.verifyCode(req.body);
+        const isValidPass = validPassword(req.body.oldPassword,user.hash,user.salt);
+        if( isValidPass && isValidCode ){
+            let newPassword = genPassword(req.body.newPassword);
+            user.hash = newPassword.hash;
+            user.salt = newPassword.salt;
+            req.body = user;
+            next()
+        }else{
+            return res.status(404).json({
+                success:false,
+                result:'User could not be authenticated. Try again'
+            })
+        }
+    } catch (error) {
+      next(error);  
+    }
+}
 
 // END OF PROTECTED ROUTES' FUNCTIONS //
