@@ -15,7 +15,8 @@ const petSchema = new Schema({
     province:{type:String,required:true},
     pictures:[{type:mongoose.Schema.Types.ObjectId,ref:'Picture'}],
     videos:[{type:mongoose.Schema.Types.ObjectId,ref:'Videos'}],
-    owner: {type:mongoose.Schema.Types.ObjectId,ref:'User'} 
+    owner: {type:mongoose.Schema.Types.ObjectId,ref:'User'},
+    ad:{type:mongoose.Schema.Types.ObjectId,ref:'Ad'} 
 });
 
 module.exports = mongoose.model('Pet',petSchema);

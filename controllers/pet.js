@@ -1,6 +1,53 @@
 const mongoose = require('mongoose');
+const removeFromArray = require('../auth/utils').removeFromArray;
 const Pet = require('../models/pet');
-const User = require('mongoose').model('User');
+const User = require('./user');
+
+
+function createNew(body, userId){
+    let newPet = body;
+    newPet.owner = userId;
+    return new Promise((resolve,reject)=>{
+        Pet.create(newPet).then(pet=>{
+            if(!pet){
+                reject(new Error('Could not create new pet'))
+            }else{
+                resolve(pet)
+            }
+        })
+        .catch(err=>{reject(err)});
+    })
+}
+
+function updateDocument(body, doc){
+    for (const key in body) {
+        doc[key] = body[key]
+    }
+    return doc;
+}
+
+function deleteAd(id,user){
+    return new Promise(async (resolve,reject)=>{
+        try {
+            const Ad = require('../models/ad');
+            await Ad.findByIdAndRemove(id);
+            await removeFromArray(user,'ads',id);
+            resolve(true);
+        } catch (error) {
+            reject(error);
+        }
+        
+        
+        /* Ad.findByIdAndRemove(id).then(deleted=>{
+            if(deleted){
+                resolve(true)
+            }else{
+                reject(new Error('Add deletion failed'))
+            }
+        })
+        .catch(err=>{reject(err)}); */
+    })
+}
 
 // START OF PROTECTED ROUTES' FUNCTIONS //
 
@@ -14,43 +61,26 @@ user's id becomes available
 
 */
 
-exports.createPet = (req,res,next)=>{    
-
-    User.findById(req.user._id)
-    .populate('pets')
-    .exec()
-    .then(user=>{
-        let newPet = req.body;
-        newPet.owner = user._id;
-        Pet.create(newPet)
-        .then(pet=>{
-            user.pets.push(pet);
-            user.save();
-            req.pets = user.pets;
-            next();            
-        })
-        .catch((err)=>next(err));  
-    })
-    .catch((err)=>next(err));      
-}
-
-exports.successNewPet = (req,res)=>{
-    /* 
-    Middleware following the createPet function, expects a req.pet object
-    with the info of the newly created pet.    
-    */
-
-    if(req.pets){
+exports.createPet = async (req,res,next)=>{
+    try {
+        let user = req.user;        
+        await user.populate('pets').execPopulate();
+        let newPet = await createNew(req.body,user._id);
+        user.pets.push(newPet);
+        await user.save();
         return res.status(200).json({
             success:true,
-            result:req.pets
-        })
-    }
-};
+            result:user.pets
+        })        
+    } catch (error) {
+        next(error);
+    }    
+      
+}
 
-exports.updatePet=(req,res)=>{
-    let id = req.params.id;
-    Pet.findById(id).then(pet=>{        
+exports.updatePet=(req,res)=>{   
+   
+    Pet.findById(req.params.id).then(pet=>{        
         
         if(String(req.user._id)!== String(pet.owner)){
             return res.status(400).json({
@@ -59,42 +89,74 @@ exports.updatePet=(req,res)=>{
             })
         }
         
-        Pet.findByIdAndUpdate(id, req.body,{new:true})
-        .then(updatedPet=>{
+        pet = updateDocument(req.body,pet);
+        
+        pet.save().then(updatedPet=>{
             if(updatedPet){
                 return res.status(200).json({
                     success:true,
                     result:updatedPet
                 })
+            }else{
+                next(new Error('Could not update pet'));
             }
         })
-        .catch((err)=>next(err));  
+        .catch((err)=>next(err))        
     })
     .catch((err)=>next(err));  
 };
 
 
-exports.deleteOne = (req,res)=>{
-    let id = req.params.id;
-    Pet.findById(id)    
-    .then(foundPet=>{              
-        if(String(req.user._id)!==String(foundPet.owner)){  
+exports.deleteOne = async (req,res)=>{
+    try {
+        let foundPet = await Pet.findById(req.params.id);
 
+        if(String(req.user._id)!==String(foundPet.owner)){  
             return res.status(404).json({
                 success: false,
                 result:"You are not authorized to delete this pet"
             })
+        };
+
+        if(foundPet.ad){
+            await deleteAd(foundPet.ad,req.user);
         }
-        Pet.deleteOne(foundPet)
-        .then(deletedPet=>{
-            return res.status(200).json({
-                success: true,
-                result:foundPet._id
+
+        await Pet.deleteOne(foundPet);
+        await removeFromArray(req.user,'pets',foundPet._id);
+
+        return res.status(200).json({
+            success: true,
+            result:foundPet._id
+        })
+        
+    } catch (error) {
+        next(error);
+    }
+
+    /* Pet.findById(req.params.id).then(foundPet=>{
+
+        if(String(req.user._id)!==String(foundPet.owner)){  
+            return res.status(404).json({
+                success: false,
+                result:"You are not authorized to delete this pet"
             })
+        };
+
+        Pet.deleteOne(foundPet).then(deletedPet=>{
+            removeFromArray(req.user,'pets',foundPet._id).then(result=>{
+                if(result){
+                    return res.status(200).json({
+                        success: true,
+                        result:foundPet._id
+                    })
+                }
+            })
+            .catch((err)=>next(err));  
         })
         .catch((err)=>next(err));  
     })
-    .catch((err)=>next(err));  
+    .catch((err)=>next(err)); */  
 };
 
 // END OF PROTECTED ROUTES'S FUNCTIONS //

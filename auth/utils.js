@@ -3,6 +3,8 @@ const jsonwebtoken = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const passport = require('passport');
+const { resolve } = require('path');
+const { rejects } = require('assert');
 
 const pathToKey = path.join(__dirname, '..', 'keys/rsa_priv_key.pem');
 const PRIV_KEY = fs.readFileSync(pathToKey, 'utf8');
@@ -58,10 +60,28 @@ function issueJWT(user) {
         next();
     }
 };
+
+function removeFromArray(doc,key,idToRemove){
+  
+  return new Promise((resolve, reject)=>{
+    let targetArray = doc[key];
+    targetArray = targetArray.filter(elem=>String(elem) !== String(idToRemove));
+    doc[key] = targetArray;
+    doc.save().then(saved=>{
+      if(saved){
+        resolve(true)
+      }else{
+        reject(new Error('Remove from array failed. Document not saved'))
+      }
+    })
+    .catch(err=>{reject(err)})
+  })  
+}
   
   module.exports.validPassword = validPassword;
   module.exports.genPassword = genPassword;
   module.exports.issueJWT = issueJWT;
   module.exports.authUser = authUser;
+  module.exports.removeFromArray = removeFromArray;
   
 

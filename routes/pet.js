@@ -9,7 +9,7 @@ module.exports = (router)=>{
     /* START OF PROTECTED ROUTES */
 
     router.post('/pets/create',passport.authenticate('jwt',{session:false}),
-    Pet.createPet,Pet.successNewPet);
+    Pet.createPet);
 
     router.put('/pets/:id/update',passport.authenticate('jwt',{session:false}),
     Pet.updatePet);

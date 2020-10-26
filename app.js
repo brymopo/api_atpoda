@@ -7,8 +7,6 @@ const passport = require('passport');
 const user = require('./routes/user');
 
 
-let test = 'test'
-
 require('dotenv').config();
 require('./config/database');
 require('./models/user');
@@ -35,24 +33,6 @@ function errorHandler(error,req,res,next){
     }
 }
 
-function depopulateSurvey(){
-    const mongoose = require('mongoose');
-    const Survey = require("./models/survey");
-    const User = mongoose.model('User');
-
-    User.find({}).then(users=>{
-        users.forEach(user=>{
-            if(user.survey.length){
-                user.survey = [];
-                user.save().then(u=>{if(u){console.log('saved')}}).catch(e=>{console.log(e.message)})
-            }else{
-
-            }
-        })
-    })
-
-}
-
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cors(corsOptions));
@@ -62,11 +42,7 @@ app.use(errorHandler);
 
 require('./chat')(io);
 
-// io.on('connection', io.chat(socket));
-
 const port = process.env.PORT || 3000;
-
-/* depopulateSurvey(); */
 
 app.use('*',(req,res)=>{
     return res.status(404).json({
@@ -74,6 +50,7 @@ app.use('*',(req,res)=>{
         method:req.method       
     })
 });
+
 http.listen(port,()=>{
     console.log('Server running successfully');
 })

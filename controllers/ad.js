@@ -1,8 +1,22 @@
 const mongoose = require('mongoose');
-const ad = require('../models/ad');
 const Ad =  require('../models/ad');
-const User = require('mongoose').model('User');
-const Pet = require('../models/pet');
+const removeFromArray = require('../auth/utils').removeFromArray;
+
+function pushToPet(petId,adId){
+    return new Promise(async (resolve,reject)=>{
+        try {
+            const Pet = require('../models/pet');
+            let pet = await Pet.findById(petId);
+            pet.ad = adId;
+            let result = await pet.save();
+            result? resolve(true):reject(false)
+            
+        } catch (error) {
+            reject(error)
+        }       
+        
+    })
+}
 
 exports.showOne = (req,res,next)=>{
     let id = req.params.id;
@@ -58,32 +72,42 @@ user's id becomes available
 
 */
 
-exports.createAdd = (req,res,next)=>{
-    
-    User.findById(req.user._id)
-    .then(user=>{
-        const newAd = new Ad({pet:req.body});        
-        newAd.save()                  
-        .then(newAd=>{
-            user.ads.push(newAd._id);
-            user.save();
-            Ad.populate(newAd, {path:'pet'})
-            .then(popAd=>{
-                return res.status(200).json({
-                    success:true,
-                    result:popAd
-                })
+exports.createAdd = async (req,res,next)=>{
+    try {
+        let user = req.user;
+        const newAd = new Ad({pet:req.body}); 
+        await newAd.save();
+        user.ads.push(newAd._id);
+        await user.save();
+        let result = await pushToPet(newAd.pet,newAd._id);
+        if(result){
+            await newAd.populate('pet').execPopulate();
+            return res.status(200).json({
+                success:true,
+                result:newAd
             })
-            .catch(e=>next(e))
-            
+        }
+    } catch (error) {
+        next(error);
+    }
+    /* let user = req.user;
+    const newAd = new Ad({pet:req.body}); 
+    newAd.save().then(newAd=>{
+        user.ads.push(newAd._id);
+        user.save();
+        Ad.populate(newAd, {path:'pet'}).then(popAd=>{
+            return res.status(200).json({
+                success:true,
+                result:popAd
+            })
         })
+        .catch(e=>next(e))
     })
-    .catch((err)=>next(err));  
+    .catch(e=>next(e))    */
 };
 
 exports.deleteOne = (req,res,next)=>{
-    let id = req.params.id;
-    Ad.findById(id)
+    Ad.findById(req.params.id)
     .populate('pet')
     .exec()
     .then(foundAd=>{       
@@ -96,17 +120,19 @@ exports.deleteOne = (req,res,next)=>{
             })
         }
 
-        Ad.deleteOne(foundAd)
-        .then((deletedAd)=>{
-            
-            if(deletedAd){
-                return res.status(200).json({
-                    success: true,
-                    result:foundAd._id
-                })
-            }
+        Ad.deleteOne(foundAd).then((deletedAd)=>{
+            removeFromArray(req.user,'ads',foundAd._id).then(result=>{
+                if(result){
+                    return res.status(200).json({
+                        success: true,
+                        result:foundAd._id
+                    })
+                }
+            })
+            .catch((err)=>next(err));              
                        
         })
+        .catch((err)=>next(err));  
         
     })
     .catch((err)=>next(err));  
