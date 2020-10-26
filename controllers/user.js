@@ -52,7 +52,7 @@ function createNewUser(form){
     });    
 };
 
-exports.findUser = (query)=>{
+function findUser(query){
     
     return new Promise((resolve,reject)=>{
         User.findOne(query).then(foundUser=>{

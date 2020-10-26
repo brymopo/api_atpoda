@@ -148,8 +148,7 @@ exports.showPet = (req,res)=>{
 
 exports.showAll = (req,res)=>{
     
-    Pet.find({})
-    .then(pets=>{
+    Pet.find({}).then(pets=>{
         return res.status(200).json({
             success:"pets found",
             result:pets

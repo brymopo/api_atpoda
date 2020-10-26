@@ -17,12 +17,7 @@ module.exports = (router)=>{
 
     router.get('/survey/:id',Survey.findSurvey,Survey.returnSurvey);
 
-    router.put('/survey/:id/update',
-        passport.authenticate('jwt',{session:false}),
-        Survey.findSurvey,
-        authUser,
-        Survey.updateSurvey
-    );
+    router.put('/survey/:id/update',passport.authenticate('jwt',{session:false}),Survey.findSurvey,authUser,Survey.updateSurvey);
 
     router.delete('/survey/:id/delete',
         passport.authenticate('jwt',{session:false}),
