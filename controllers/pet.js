@@ -35,17 +35,8 @@ function deleteAd(id,user){
             resolve(true);
         } catch (error) {
             reject(error);
-        }
+        }       
         
-        
-        /* Ad.findByIdAndRemove(id).then(deleted=>{
-            if(deleted){
-                resolve(true)
-            }else{
-                reject(new Error('Add deletion failed'))
-            }
-        })
-        .catch(err=>{reject(err)}); */
     })
 }
 
@@ -132,31 +123,7 @@ exports.deleteOne = async (req,res)=>{
         
     } catch (error) {
         next(error);
-    }
-
-    /* Pet.findById(req.params.id).then(foundPet=>{
-
-        if(String(req.user._id)!==String(foundPet.owner)){  
-            return res.status(404).json({
-                success: false,
-                result:"You are not authorized to delete this pet"
-            })
-        };
-
-        Pet.deleteOne(foundPet).then(deletedPet=>{
-            removeFromArray(req.user,'pets',foundPet._id).then(result=>{
-                if(result){
-                    return res.status(200).json({
-                        success: true,
-                        result:foundPet._id
-                    })
-                }
-            })
-            .catch((err)=>next(err));  
-        })
-        .catch((err)=>next(err));  
-    })
-    .catch((err)=>next(err)); */  
+    }     
 };
 
 // END OF PROTECTED ROUTES'S FUNCTIONS //

@@ -90,20 +90,7 @@ exports.createAdd = async (req,res,next)=>{
     } catch (error) {
         next(error);
     }
-    /* let user = req.user;
-    const newAd = new Ad({pet:req.body}); 
-    newAd.save().then(newAd=>{
-        user.ads.push(newAd._id);
-        user.save();
-        Ad.populate(newAd, {path:'pet'}).then(popAd=>{
-            return res.status(200).json({
-                success:true,
-                result:popAd
-            })
-        })
-        .catch(e=>next(e))
-    })
-    .catch(e=>next(e))    */
+    
 };
 
 exports.deleteOne = (req,res,next)=>{
