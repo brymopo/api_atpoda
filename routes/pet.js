@@ -1,6 +1,8 @@
 module.exports = (router)=>{    
     const passport = require('passport');
     const Pet = require('../controllers/pet');
+    const multiparty = require('connect-multiparty');
+    let uploadImage = multiparty({uploadDir:'./assets/images'});  
 
     router.get('/pets/show',Pet.showAll);
 
@@ -8,11 +10,9 @@ module.exports = (router)=>{
 
     /* START OF PROTECTED ROUTES */
 
-    router.post('/pets/create',passport.authenticate('jwt',{session:false}),
-    Pet.createPet);
+    router.post('/pets/create',passport.authenticate('jwt',{session:false}),uploadImage,Pet.createPet);
 
-    router.put('/pets/:id/update',passport.authenticate('jwt',{session:false}),
-    Pet.updatePet);
+    router.post('/pets/:id/update',passport.authenticate('jwt',{session:false}),uploadImage,Pet.updatePet);
 
     router.delete('/pets/:id/delete',passport.authenticate('jwt',{session:false}),Pet.deleteOne);
 

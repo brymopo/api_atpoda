@@ -40,7 +40,7 @@ exports.showOne = (req,res,next)=>{
     .catch((err)=>next(err));  
 }; 
 
-exports.showAds = (req,res)=>{
+exports.showAds = (req,res,next)=>{
     Ad.find()
     .populate('pet')
     .populate('conversations')

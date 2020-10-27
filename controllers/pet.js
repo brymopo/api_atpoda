@@ -1,12 +1,19 @@
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const removeFromArray = require('../auth/utils').removeFromArray;
 const Pet = require('../models/pet');
 const User = require('./user');
 
-
-function createNew(body, userId){
-    let newPet = body;
+function createNew(req, userId){    
+    let newPet = req.body;
     newPet.owner = userId;
+    
+    if(req.files){
+        let routeImage = req.files.image.path;
+        newPet.pictures = [`${process.env.URL}${routeImage}`];
+    }
+    
     return new Promise((resolve,reject)=>{
         Pet.create(newPet).then(pet=>{
             if(!pet){
@@ -19,9 +26,14 @@ function createNew(body, userId){
     })
 }
 
-function updateDocument(body, doc){
+function updateDocument(req, doc){
+    let body = req.body;
     for (const key in body) {
         doc[key] = body[key]
+    }
+    if(req.files){
+        let routeImage = req.files.image.path;
+        doc.pictures = [`${process.env.URL}${routeImage}`];
     }
     return doc;
 }
@@ -53,10 +65,10 @@ user's id becomes available
 */
 
 exports.createPet = async (req,res,next)=>{
-    try {
+    try {        
         let user = req.user;        
         await user.populate('pets').execPopulate();
-        let newPet = await createNew(req.body,user._id);
+        let newPet = await createNew(req,user._id);
         user.pets.push(newPet);
         await user.save();
         return res.status(200).json({
@@ -70,9 +82,10 @@ exports.createPet = async (req,res,next)=>{
 }
 
 exports.updatePet=(req,res)=>{   
-   
+    console.log('reached pet update');
+    console.log('Body..',req.body);
     Pet.findById(req.params.id).then(pet=>{        
-        
+        console.log('found pet: ',pet);        
         if(String(req.user._id)!== String(pet.owner)){
             return res.status(400).json({
                 success:false,
@@ -80,7 +93,7 @@ exports.updatePet=(req,res)=>{
             })
         }
         
-        pet = updateDocument(req.body,pet);
+        pet = updateDocument(req,pet);
         
         pet.save().then(updatedPet=>{
             if(updatedPet){
