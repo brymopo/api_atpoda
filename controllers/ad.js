@@ -88,7 +88,10 @@ exports.createAdd = async (req,res,next)=>{
             })
         }
     } catch (error) {
-        next(error);
+        Ad.findByIdAndRemove(newAd._id).then(()=>{
+            next(error)
+        })
+        .catch(e=>next(error));        
     }
     
 };

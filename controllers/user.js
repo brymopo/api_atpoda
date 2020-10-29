@@ -268,7 +268,7 @@ exports.updateUser = (req,res)=>{
     if(req.user){
         User.findByIdAndUpdate(req.user._id,req.body,{new:true})
         .populate('pets')
-        .populate('ads')
+        .populate({path:'ads',populate:{path: 'pet',model:'Pet'}})
         .populate('survey')
         .exec()
         .then(updatedUser=>{
@@ -287,9 +287,10 @@ exports.updateUser = (req,res)=>{
 exports.requestPasswordChange = async (req,res,next)=>{
     try {
         let code2fa = await TwoFA.createCode(req.user);
+        await TwoFA.sendSMSCode(code2fa,req.user);
         return res.status(200).json({
                 success:true,
-                result:code2fa
+                result:code2fa.token
         }) 
     } catch (error) {
         next(error)

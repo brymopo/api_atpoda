@@ -29,9 +29,11 @@ exports.create = (userId, twofa)=>{
 }
 
 exports.retrieve = (token)=>{
-    
+    console.log('token inside',token);
+    console.log('type: ',typeof token);
     return new Promise((resolve, reject)=>{
-        Token.findOne({token:token}).then(foundToken=>{            
+        Token.findOne({token:token}).then(foundToken=>{
+            console.log('found token: ',foundToken)            
             if(!foundToken){
                 reject(new Error("Either broken or expired link, please retry"));
             }else{
@@ -70,7 +72,7 @@ exports.destroy = (token)=>{
 
 exports.retrieveByUserId = (userId)=>{
     return new Promise((resolve,reject)=>{
-        Token.findOne({userId:userId}).then(token=>{
+        Token.findOne({_userId:userId}).then(token=>{
             if(!token){
                 resolve(false);
             }else{

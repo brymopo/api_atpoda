@@ -60,7 +60,7 @@ exports.verifyCode = (body)=>{
                     reject(new Error('Aborted, too many failed attempts'));
                 }else{
                     Token.increseFailedAttempts(token,attempts);
-                    reject(new Error('Code validation failed'));
+                    reject(new Error(`Code validation failed: remaining attempts: ${3-attempts}`));
                 }
                 
             }
