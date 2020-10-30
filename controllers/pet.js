@@ -4,14 +4,21 @@ const path = require('path');
 const removeFromArray = require('../auth/utils').removeFromArray;
 const Pet = require('../models/pet');
 const User = require('./user');
+const deleteImage = require('./picture').deleteImage;
+
+function getNewImageId(req){
+    let routeImage = req.files.image.path;
+    let splitFile = routeImage.split('images');
+    return splitFile[splitFile.length - 1].replace('/', '').replace('\\', '');
+}
 
 function createNew(req, userId){    
     let newPet = req.body;
     newPet.owner = userId;
+    newPet.pictures = [];
     
     if(req.files){
-        let routeImage = req.files.image.path;
-        newPet.pictures = [`${process.env.URL}${routeImage}`];
+        newPet.pictures.push(getNewImageId(req));
     }
     
     return new Promise((resolve,reject)=>{
@@ -50,6 +57,23 @@ function deleteAd(id,user){
         }       
         
     })
+}
+
+function updatePicturesArray(picturesArray, req){
+    if(req.files){
+        picturesArray.push(getNewImageId(req));
+    }
+}
+
+async function deletePicturesArray(imageArray){
+    for (let index = 0; index < imageArray.length; index++) {
+        try {
+           let deleted = await deleteImage(imageArray[index]); 
+        } catch (error) {
+            console.log('an error occurred...')
+            console.log(error);   
+        }        
+    }
 }
 
 // START OF PROTECTED ROUTES' FUNCTIONS //
@@ -124,6 +148,10 @@ exports.deleteOne = async (req,res)=>{
 
         if(foundPet.ad){
             await deleteAd(foundPet.ad,req.user);
+        }
+
+        if(foundPet.pictures.length){
+            await deletePicturesArray(foundPet.pictures);
         }
 
         await Pet.deleteOne(foundPet);

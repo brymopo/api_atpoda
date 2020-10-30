@@ -66,7 +66,7 @@ require('./chat')(io);
 
 const port = process.env.PORT || 3000;
 
-app.use('/assets',express.static(__dirname + '/assets'));
+// app.use('/assets',express.static(__dirname + '/assets'));
 
 app.use('*',(req,res)=>{
     return res.status(404).json({

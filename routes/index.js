@@ -1,9 +1,8 @@
 module.exports = (app)=>{
-    const router = require('express').Router(); 
+    const router = require('express').Router();
+    const Picture = require('../controllers/picture'); 
      
-    router.get('/',(req,res)=>{
-        res.send('<h1>Welcome to Atpoda</h1>')
-    })
+    router.get('/getImage',Picture.getImage);
 
     require('./user')(router);
     require('./pet')(router);
