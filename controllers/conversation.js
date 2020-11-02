@@ -12,7 +12,7 @@ exports.getConversations = (userId)=>{
             if(!user){
                 resolve([]);
             }
-            Conversation.populate(user.conversations,{path:'messages'})            
+            Conversation.populate(user.conversations,{path:'messages'})               
             .then(c=>{
                 resolve(c)
             })
