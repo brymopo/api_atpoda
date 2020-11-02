@@ -60,9 +60,7 @@ function issueJWT(user) {
 };
 
 function removeFromArray(doc,key,idToRemove){
-  console.log('received doc: ',doc);
-  console.log('received key: ',key);
-  console.log('Id to remove: ',idToRemove);
+    
   return new Promise((resolve, reject)=>{
     let targetArray = doc[key];
     targetArray = targetArray.filter(elem=>String(elem) !== String(idToRemove));

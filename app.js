@@ -33,28 +33,6 @@ function errorHandler(error,req,res,next){
     }
 }
 
-function createAdmin(){
-    const Admin = require('./models/admin');
-    const genPassword = require('./auth/utils').genPassword;
-    let hashAndSalt = genPassword('password');
-    let newAdmin = new Admin({
-        username:'charTest',
-        firstName:'Bryan',
-        lastName:'Moreno',
-        email:'bm_posada@hotmail.com',        
-        phone:'3006629657',
-        hash:hashAndSalt.hash,
-        salt:hashAndSalt.salt,
-        admin:true,
-        verified:true
-    });
-    newAdmin.save().then(created=>{
-        if(created){
-            console.log('Admin created!!')
-        }
-    })
-}
-
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cors(corsOptions));

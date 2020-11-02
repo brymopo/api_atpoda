@@ -4,11 +4,6 @@ module.exports = (router)=>{
     const passport = require('passport');
     const SurveyQuestions = require('../controllers/survey_question');
 
-    router.post('/admin/create',
-        /* passport.authenticate('jwt',{session:false}),
-        Admin.isAdmin, */
-        Admin.create);
-
     router.post('/admin/survey/questions/new',
         passport.authenticate('jwt',{session:false}),
         Admin.isAdmin,

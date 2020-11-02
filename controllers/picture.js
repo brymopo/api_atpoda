@@ -1,12 +1,10 @@
 const fs = require('fs');
 const path = require('path');
-const { exists } = require('../models/ad');
+
 
 exports.getImage = (req,res,next)=>{
     const imageId = req.query.image;
-    const imagePath = `./assets/images/${imageId}`;
-
-    console.log('one request received...')
+    const imagePath = `./assets/images/${imageId}`;   
 
     fs.exists(imagePath,(exists)=>{
         if(exists){

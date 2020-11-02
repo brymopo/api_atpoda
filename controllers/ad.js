@@ -7,9 +7,7 @@ function pushToPet(petId,adId){
     return new Promise(async (resolve,reject)=>{
         try {
             const Pet = require('../models/pet');
-            let pet = await Pet.findById(petId);
-            console.log('pet: ',pet);
-            console.log('typeof ad',typeof pet.ad)
+            let pet = await Pet.findById(petId);            
 
             if(pet.ad){
                 reject(new Error('An ad already exists for this pet'))
@@ -51,9 +49,7 @@ exports.deleteReportedAd = async (req,res,next)=>{
         await reportedAd.populate('pet').execPopulate();
 
         let pet = await Pet.findById(reportedAd.pet._id);
-        let user = await User.findById(pet.owner);
-        console.log('pet owner: ',pet.owner);
-        console.log('found user: ',user);
+        let user = await User.findById(pet.owner);        
         pet.ad = undefined;
         await pet.save();        
         let deleteSuccess = await deleteAd(reportedAd._id,user);

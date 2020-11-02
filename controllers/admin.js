@@ -22,24 +22,6 @@ function createAdmin(form){
     return newAdmin
 }
 
-exports.create = (req,res)=>{
-    let form = req.body;
-
-    let newAdmin = createAdmin(form);    
-
-    newAdmin.save()
-    .then(admin=>{
-        if(!admin){
-            return res.status(206).send("<h1>Admin could not be created</h1>")
-        }
-        return res.status(200).json({
-            message:"Admin created",
-            result:admin
-        })
-    })
-    .catch((err)=>next(err));  
-}
-
 exports.isAdmin = (req,res,next)=>{    
     if(!req.user.admin){
         return res.status(400).json({
@@ -75,18 +57,6 @@ exports.delete = (req,res,next)=>{
             res.status(200).send("OK")
         }
     })
-}
-
-exports.deleteReported = async (req,res,next)=>{
-    
-    /* const id = req.params.adId;
-    Ad.findByIdAndRemove({_id:id})
-    .then(deleted=>{
-        if(deleted){
-            next()
-        }
-    })
-    .catch(e=> next(e)) */
 }
 
 exports.removeFromReportedArray= (req,res,next)=>{

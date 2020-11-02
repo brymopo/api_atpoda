@@ -17,11 +17,11 @@ exports.joinRooms = async (userId,socket,io)=>{
     try{
         socket.join(userId);
         let conversations = await Conversation.getConversations(userId);
-        console.log('conv: ',conversations);
+
         if(conversations.length){
             conversations.forEach(conv=>{
                 socket.join(conv._id);
-                console.log('joined room: ',conv._id)
+                
             })
             io.to(userId).emit('onInit',conversations);
         }

@@ -42,7 +42,7 @@ function updateDocument(req, doc){
     if(req.files){
         doc.pictures = [getNewImageId(req)];
     }
-    console.log('doc before going out..',doc)
+    
     return doc;
 }
 
