@@ -1,2 +1,3 @@
 node_modules/
 keys/rsa_priv_key.pem
+.env
