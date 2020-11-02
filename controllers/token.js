@@ -5,7 +5,7 @@ function generateCode(){
     let code = "";
     let size = Math.floor(Math.random()*3) + 6;
     for (let index = 0; index < size; index++) {
-        let digit = Math.floor(Math.random()*10);
+        let digit = Math.floor(Math.random()*10 + 1);
         code += digit;        
     }
     return code;

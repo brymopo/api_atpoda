@@ -8,7 +8,7 @@ const twilioNumber = process.env.TWILIO_NUMBER;
 
 exports.sendSMSCode = (token,user)=>{
         let targetNumber = `+57${user.phone}`;
-
+        console.log('Sending to...',targetNumber);
         const sms2FA = {
             body:`Tu codigo ATPODA es: ${token.code}. Valido por 5 minutos`,
             from:twilioNumber,

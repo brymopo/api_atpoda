@@ -30,6 +30,8 @@ exports.deleteImage = (id)=>{
                         resolve(true);
                     }
                 })
+            }else{
+                resolve(false);
             }
         })
         

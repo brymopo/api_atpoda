@@ -147,11 +147,10 @@ exports.validateEmail = async (req,res,next)=>{
         let isSuccess = await user.save();
         
         if(isSuccess){            
-            let jwt = issueJWT(user);
             Token.destroy(token);    
             return res.status(200).json({
                 success:true,
-                result:{token: jwt.token, expiresIn:jwt.expires}            
+                result:'Email verified'           
             }) ;               
         }
     } catch (error) {
@@ -264,7 +263,7 @@ exports.showUser = async (req,res,next)=>{
     
 };
 
-exports.updateUser = (req,res)=>{
+exports.updateUser = (req,res,next)=>{
     if(req.user){
         User.findByIdAndUpdate(req.user._id,req.body,{new:true})
         .populate('pets')

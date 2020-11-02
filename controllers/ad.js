@@ -1,21 +1,70 @@
 const mongoose = require('mongoose');
 const Ad =  require('../models/ad');
 const removeFromArray = require('../auth/utils').removeFromArray;
+const updateRemoveOneFromDoc = require('../auth/utils').updateRemoveOneFromDoc;
 
 function pushToPet(petId,adId){
     return new Promise(async (resolve,reject)=>{
         try {
             const Pet = require('../models/pet');
             let pet = await Pet.findById(petId);
-            pet.ad = adId;
-            let result = await pet.save();
-            result? resolve(true):reject(false)
+            console.log('pet: ',pet);
+            console.log('typeof ad',typeof pet.ad)
+
+            if(pet.ad){
+                reject(new Error('An ad already exists for this pet'))
+            }else{
+                pet.ad = adId;
+                let result = await pet.save();
+                result? resolve(true):reject(false)
+            }           
             
         } catch (error) {
             reject(error)
         }       
         
     })
+}
+
+function deleteAd(id,user){
+    
+    return new Promise(async (resolve,reject)=>{
+        try {
+            const Ad = require('../models/ad');
+            await Ad.findByIdAndRemove(id);
+            await removeFromArray(user,'ads',id);            
+            resolve(true);
+        } catch (error) {
+            reject(error);
+        }       
+        
+    })
+}
+
+exports.deleteAd = deleteAd;
+
+exports.deleteReportedAd = async (req,res,next)=>{
+    const User = require('mongoose').model('User');
+    const Pet = require("../models/pet");
+    try {
+        let reportedAd = await Ad.findById(req.params.adId);
+        await reportedAd.populate('pet').execPopulate();
+
+        let pet = await Pet.findById(reportedAd.pet._id);
+        let user = await User.findById(pet.owner);
+        console.log('pet owner: ',pet.owner);
+        console.log('found user: ',user);
+        pet.ad = undefined;
+        await pet.save();        
+        let deleteSuccess = await deleteAd(reportedAd._id,user);
+        
+        if(deleteSuccess){
+            next();
+        }
+              
+    } catch (error) {
+        next(error);
+    }
 }
 
 exports.showOne = (req,res,next)=>{
@@ -31,7 +80,7 @@ exports.showOne = (req,res,next)=>{
                 result:foundAd
             })
         }else{
-            return res.status(200).json({
+            return res.status(404).json({
                 success: false,
                 result:"No add found with this id"
             })
@@ -73,14 +122,20 @@ user's id becomes available
 */
 
 exports.createAdd = async (req,res,next)=>{
-    try {
-        let user = req.user;
-        const newAd = new Ad({pet:req.body}); 
+    let user = req.user;
+    const newAd = new Ad({pet:req.body}); 
+    try {        
+
+        if(user.ads.length >= 2){
+            throw Error('No more than two adds allowed')
+        }
+        
         await newAd.save();
-        user.ads.push(newAd._id);
-        await user.save();
-        let result = await pushToPet(newAd.pet,newAd._id);
+        
+        let result = await pushToPet(newAd.pet,newAd._id);        
         if(result){
+            user.ads.push(newAd._id);
+            await user.save();
             await newAd.populate('pet').execPopulate();
             return res.status(200).json({
                 success:true,
@@ -88,10 +143,15 @@ exports.createAdd = async (req,res,next)=>{
             })
         }
     } catch (error) {
-        Ad.findByIdAndRemove(newAd._id).then(()=>{
-            next(error)
-        })
-        .catch(e=>next(error));        
+        if(newAd._id){
+            Ad.findByIdAndRemove(newAd._id).then(()=>{
+                next(error)
+            })
+            .catch(e=>next(error));  
+        }else{
+            next(error);
+        }
+               
     }
     
 };

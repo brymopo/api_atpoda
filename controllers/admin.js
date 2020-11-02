@@ -3,6 +3,7 @@ const Admin = require('../models/admin');
 const Ad = require('../models/ad');
 const SurveyQuestion = require('../models/survey_question');
 const genPassword = require('../auth/utils').genPassword;
+const deleteAd = require('./ad.js').deleteAd;
 
 function createAdmin(form){
     let hashAndSalt = genPassword(form.password);
@@ -76,15 +77,16 @@ exports.delete = (req,res,next)=>{
     })
 }
 
-exports.deleteReported = (req,res,next)=>{
-    const id = req.params.adId;
+exports.deleteReported = async (req,res,next)=>{
+    
+    /* const id = req.params.adId;
     Ad.findByIdAndRemove({_id:id})
     .then(deleted=>{
         if(deleted){
             next()
         }
     })
-    .catch(e=> next(e))
+    .catch(e=> next(e)) */
 }
 
 exports.removeFromReportedArray= (req,res,next)=>{

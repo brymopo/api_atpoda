@@ -1,5 +1,6 @@
 module.exports = (router)=>{
     const Admin  =  require('../controllers/admin');
+    const deleteReportedAd = require('../controllers/ad').deleteReportedAd;
     const passport = require('passport');
     const SurveyQuestions = require('../controllers/survey_question');
 
@@ -29,7 +30,7 @@ module.exports = (router)=>{
     router.delete('/admin/reported_ads/:adId/delete',
                 passport.authenticate('jwt',{session:false}),
                 Admin.isAdmin,
-                Admin.deleteReported,
+                deleteReportedAd,
                 Admin.removeFromReportedArray)
 }
 

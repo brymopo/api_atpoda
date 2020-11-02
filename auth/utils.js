@@ -3,8 +3,6 @@ const jsonwebtoken = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const passport = require('passport');
-const { resolve } = require('path');
-const { rejects } = require('assert');
 
 const pathToKey = path.join(__dirname, '..', 'keys/rsa_priv_key.pem');
 const PRIV_KEY = fs.readFileSync(pathToKey, 'utf8');
@@ -62,7 +60,9 @@ function issueJWT(user) {
 };
 
 function removeFromArray(doc,key,idToRemove){
-  
+  console.log('received doc: ',doc);
+  console.log('received key: ',key);
+  console.log('Id to remove: ',idToRemove);
   return new Promise((resolve, reject)=>{
     let targetArray = doc[key];
     targetArray = targetArray.filter(elem=>String(elem) !== String(idToRemove));
@@ -77,11 +77,27 @@ function removeFromArray(doc,key,idToRemove){
     .catch(err=>{reject(err)})
   })  
 }
-  
+
+function deleteAd(id,user){
+  return new Promise(async (resolve,reject)=>{
+      try {
+          const Ad = require('../models/ad');
+          await Ad.findByIdAndRemove(id);
+          await removeFromArray(user,'ads',id);
+          resolve(true);
+      } catch (error) {
+          reject(error);
+      }       
+      
+  })
+}
+
   module.exports.validPassword = validPassword;
   module.exports.genPassword = genPassword;
   module.exports.issueJWT = issueJWT;
   module.exports.authUser = authUser;
   module.exports.removeFromArray = removeFromArray;
+  module.exports.deleteAd = deleteAd;
+
   
 

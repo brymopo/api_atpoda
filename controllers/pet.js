@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 const removeFromArray = require('../auth/utils').removeFromArray;
+const deleteAd = require('./ad').deleteAd;
 const Pet = require('../models/pet');
 const User = require('./user');
 const deleteImage = require('./picture').deleteImage;
@@ -39,24 +40,10 @@ function updateDocument(req, doc){
         doc[key] = body[key]
     }
     if(req.files){
-        let routeImage = req.files.image.path;
-        doc.pictures = [`${process.env.URL}${routeImage}`];
+        doc.pictures = [getNewImageId(req)];
     }
+    console.log('doc before going out..',doc)
     return doc;
-}
-
-function deleteAd(id,user){
-    return new Promise(async (resolve,reject)=>{
-        try {
-            const Ad = require('../models/ad');
-            await Ad.findByIdAndRemove(id);
-            await removeFromArray(user,'ads',id);
-            resolve(true);
-        } catch (error) {
-            reject(error);
-        }       
-        
-    })
 }
 
 function updatePicturesArray(picturesArray, req){
@@ -105,37 +92,33 @@ exports.createPet = async (req,res,next)=>{
       
 }
 
-exports.updatePet=(req,res)=>{   
-    console.log('reached pet update');
-    console.log('Body..',req.body);
-    Pet.findById(req.params.id).then(pet=>{        
-        console.log('found pet: ',pet);        
+exports.updatePet=async (req,res,next)=>{
+    
+    try {
+        let pet = await Pet.findById(req.params.id);
+
         if(String(req.user._id)!== String(pet.owner)){
             return res.status(400).json({
                 success:false,
                 result:'You are not authorized to modify this pet'
             })
         }
-        
+
         pet = updateDocument(req,pet);
-        
-        pet.save().then(updatedPet=>{
-            if(updatedPet){
-                return res.status(200).json({
-                    success:true,
-                    result:updatedPet
-                })
-            }else{
-                next(new Error('Could not update pet'));
-            }
+
+        await pet.save();
+
+        return res.status(200).json({
+            success:true,
+            result:pet
         })
-        .catch((err)=>next(err))        
-    })
-    .catch((err)=>next(err));  
+
+    } catch (error) {
+        next(error);
+    }
 };
 
-
-exports.deleteOne = async (req,res)=>{
+exports.deleteOne = async (req,res,next)=>{
     try {
         let foundPet = await Pet.findById(req.params.id);
 
@@ -146,7 +129,7 @@ exports.deleteOne = async (req,res)=>{
             })
         };
 
-        if(foundPet.ad){
+        if(!!foundPet.ad){
             await deleteAd(foundPet.ad,req.user);
         }
 

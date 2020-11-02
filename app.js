@@ -66,8 +66,6 @@ require('./chat')(io);
 
 const port = process.env.PORT || 3000;
 
-// app.use('/assets',express.static(__dirname + '/assets'));
-
 app.use('*',(req,res)=>{
     return res.status(404).json({
         message:'The requested page does not exist',
@@ -77,6 +75,7 @@ app.use('*',(req,res)=>{
 
 http.listen(port,()=>{
     console.log('Server running successfully');
-})
+});
+
 
 module.exports = app;
